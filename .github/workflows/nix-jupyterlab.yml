@@ -17,10 +17,7 @@ jobs:
         sudo apt autoclean -y || true
         docker rmi $(docker image ls -aq)
         df -h
-    - uses: cachix/install-nix-action@v7
-    - name: Setup repo
-      run: |
-        git submodule init && git submodule update
+    - uses: cachix/install-nix-action@v8
     - uses: cachix/cachix-action@releases/v5
       with:
         name: hasktorch
