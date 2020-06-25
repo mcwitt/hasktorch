@@ -4,12 +4,14 @@ let
   sources = import ./nix/sources.nix;
   niv = (import sources.niv { }).niv;
   # hls = (import sources.hls-nix { }).hpkgs.haskell-language-server;
+  ghcide = (import sources.ghcide { }).ghcide-ghc883;
   shared = (
     import ./shared.nix {
       inherit (args);
       shellBuildInputs = [
         niv
         # hls
+        ghcide
       ];
     }
   );

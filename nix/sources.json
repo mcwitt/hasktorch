@@ -1,4 +1,16 @@
 {
+    "ghcide": {
+        "branch": "master",
+        "description": "Nix installation for ghcide",
+        "homepage": "https://github.com/digital-asset/ghcide",
+        "owner": "cachix",
+        "repo": "ghcide-nix",
+        "rev": "67493b873e1a5e5d53837401ab6b128b20e8a989",
+        "sha256": "1zq5g7ka99vcyqbg5l1bx0rliq3ihig37nzczk0wdwidjyxjghf9",
+        "type": "tarball",
+        "url": "https://github.com/cachix/ghcide-nix/archive/67493b873e1a5e5d53837401ab6b128b20e8a989.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "hackage-nix": {
         "branch": "master",
         "description": "Automatically generated Nix expressions for Hackage",
