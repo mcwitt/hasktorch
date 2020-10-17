@@ -38,44 +38,48 @@ nextParameter = do
     [] -> error "Not enough parameters supplied to replaceParameters"
     (p : t) -> do put t; return p
 
-class HasForward f a b | f a -> b where
-  forward :: f -> a -> b
+class HasForward f a where
+  type B f a :: Type
+  type B f a = GB (Rep f) (Rep a)
+  forward :: f -> a -> B f a
   default forward ::
     ( Generic f,
       Generic a,
-      Generic b,
-      GHasForward (Rep f) (Rep a) (Rep b)
+      GHasForward (Rep f) (Rep a),
+      B f a ~ GB (Rep f) (Rep a)
     ) =>
     f ->
     a ->
-    b
-  forward f a = to $ gForward (from f) (from a)
-  forwardStoch :: f -> a -> IO b
+    B f a
+  forward f a = gForward (from f) (from a)
+  forwardStoch :: f -> a -> IO (B f a)
   default forwardStoch ::
     ( Generic f,
       Generic a,
-      Generic b,
-      GHasForward (Rep f) (Rep a) (Rep b)
+      GHasForward (Rep f) (Rep a),
+      B f a ~ GB (Rep f) (Rep a)
     ) =>
     f ->
     a ->
-    IO b
-  forwardStoch f a = to <$> gForwardStoch (from f) (from a)
+    IO (B f a)
+  forwardStoch f a = gForwardStoch (from f) (from a)
 
-class GHasForward (f :: Type -> Type) (a :: Type -> Type) (b :: Type -> Type) | f a -> b where
-  gForward :: forall c c' c''. f c -> a c' -> b c''
-  gForwardStoch :: forall c c' c''. f c -> a c' -> IO (b c)
+class GHasForward (f :: Type -> Type) (a :: Type -> Type) where
+  type GB f a :: Type
+  gForward :: forall c c'. f c -> a c' -> GB f a
+  gForwardStoch :: forall c c'. f c -> a c' -> IO (GB f a)
 
-instance GHasForward U1 U1 U1 where
+instance GHasForward U1 U1 where
+  type GB U1 U1 = U1 ()
   gForward U1 U1 = U1
   gForwardStoch U1 U1 = return U1
 
 instance
-  ( GHasForward f a b,
-    GHasForward g a' b',
+  ( GHasForward f a,
+    GHasForward g a,
     b'' ~ (b :+: b')
   ) =>
-  GHasForward (f :+: g) (a :+: a') b''
+  GHasForward (f :+: g) (a :+: a')
   where
   gForward (L1 f) (L1 a) = L1 $ gForward f a
   gForward (R1 g) (R1 a') = R1 $ gForward g a'
@@ -83,25 +87,25 @@ instance
   gForwardStoch (R1 g) (R1 a') = R1 <$> gForwardStoch g a'
 
 instance
-  ( GHasForward f a b,
-    GHasForward g a' b',
+  ( GHasForward f a,
+    GHasForward g a',
     b'' ~ (b :*: b')
   ) =>
-  GHasForward (f :*: g) (a :*: a') b''
+  GHasForward (f :*: g) (a :*: a')
   where
   gForward (f :*: g) (a :*: a') = gForward f a :*: gForward g a'
   gForwardStoch (f :*: g) (a :*: a') = liftA2 (:*:) (gForwardStoch f a) (gForwardStoch g a')
 
 instance
-  (HasForward f a b) =>
-  GHasForward (K1 i f) (K1 i a) (K1 i b)
+  (HasForward f a) =>
+  GHasForward (K1 i f) (K1 i a)
   where
   gForward (K1 f) (K1 a) = K1 $ forward f a
   gForwardStoch (K1 f) (K1 a) = K1 <$> forwardStoch f a
 
 instance
-  (GHasForward f a b) =>
-  GHasForward (M1 i t f) (M1 i t' a) (M1 i t' b)
+  (GHasForward f a) =>
+  GHasForward (M1 i t f) (M1 i t' a)
   where
   gForward (M1 f) (M1 a) = M1 $ gForward f a
   gForwardStoch (M1 f) (M1 a) = M1 <$> gForwardStoch f a
@@ -214,7 +218,7 @@ linear layer input = linear' input w b
 linearForward :: Linear -> Tensor -> Tensor
 linearForward = linear -- temporary alias until dependencies are updated
 
-instance HasForward Linear Tensor Tensor where
+instance HasForward Linear Tensor where
   forward = linearForward
   forwardStoch m x = pure $ linearForward m x
 
