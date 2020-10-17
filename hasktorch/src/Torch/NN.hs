@@ -46,41 +46,43 @@ class HasForward f a where
     ( Generic f,
       Generic a,
       GHasForward (Rep f) (Rep a),
-      B f a ~ GB (Rep f) (Rep a)
+      B f a ~ GB (Rep f) (Rep a),
+      Generic (B f a)
     ) =>
     f ->
     a ->
     B f a
-  forward f a = gForward (from f) (from a)
+  forward f a = to $ gForward (from f) (from a)
   forwardStoch :: f -> a -> IO (B f a)
   default forwardStoch ::
     ( Generic f,
       Generic a,
       GHasForward (Rep f) (Rep a),
-      B f a ~ GB (Rep f) (Rep a)
+      B f a ~ GB (Rep f) (Rep a),
+      Generic (B f a)
     ) =>
     f ->
     a ->
     IO (B f a)
-  forwardStoch f a = gForwardStoch (from f) (from a)
+  forwardStoch f a = to <$> gForwardStoch (from f) (from a)
 
 class GHasForward (f :: Type -> Type) (a :: Type -> Type) where
   type GB f a :: Type
-  gForward :: forall c c'. f c -> a c' -> GB f a
-  gForwardStoch :: forall c c'. f c -> a c' -> IO (GB f a)
+  gForward :: forall c c' c''. f c -> a c' -> Rep (GB f a) c''
+  gForwardStoch :: forall c c' c''. f c -> a c' -> IO (Rep (GB f a) c'')
 
 instance GHasForward U1 U1 where
   type GB U1 U1 = U1 ()
-  gForward U1 U1 = U1
-  gForwardStoch U1 U1 = return U1
+  gForward U1 U1 = from U1
+  gForwardStoch U1 U1 = return $ from U1
 
 instance
   ( GHasForward f a,
-    GHasForward g a,
-    b'' ~ (b :+: b')
+    GHasForward g a
   ) =>
   GHasForward (f :+: g) (a :+: a')
   where
+  type GB (f :+: g) (a :+: a') = ???
   gForward (L1 f) (L1 a) = L1 $ gForward f a
   gForward (R1 g) (R1 a') = R1 $ gForward g a'
   gForwardStoch (L1 f) (L1 a) = L1 <$> gForwardStoch f a
